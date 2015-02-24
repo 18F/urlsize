@@ -1,17 +1,58 @@
 var filesize = require('filesize'),
     request = require('request'),
     async = require('async'),
+    fs = require('fs'),
+    rw = require('rw'),
+    csv = require('fast-csv'),
     yargs = require('yargs')
       .usage('$0 [options] <url> [<url>..]')
-      .require(1)
-      .alias('h', 'help'),
+      .describe('file', 'read URLs from a text file (one per line)')
+        .alias('file', 'f')
+      .describe('d', 'sort URLs by size descending (default: ascending)')
+        .boolean('d')
+      .describe('tsv', 'output tab-separated values')
+        .boolean('tsv')
+        .alias('tsv', 't')
+      .describe('help', 'show this helpful message')
+      .alias('help', 'h'),
     options = yargs.argv,
     fopts = {
       unix: true
     },
-    urls = options._;
+    urls = options._,
+    sort = options.d
+      ? function(a, b) { return b - a; }
+      : function(a, b) { return a - b; },
+    help = options.help;
 
-async.map(urls, getFileSize, done);
+if (!options.file && !urls.length) {
+  help = true;
+}
+
+if (help) {
+  yargs.showHelp();
+  return process.exit(1);
+}
+
+if (options.file) {
+  var src = options.file === '-'
+    ? '/dev/stdin'
+    : options.file;
+  rw.readFile(src, {}, function(error, buffer) {
+    if (error) return ERROR('unable to read from %s: %s', src, error);
+    urls = buffer.toString()
+      .split(/[\r\n]+/)
+      .filter(notEmpty);
+    LOG('read %d URLs from %s', urls.length, src);
+    main(urls);
+  });
+} else {
+  main(urls);
+}
+
+function main(urls) {
+  async.map(urls, getFileSize, done);
+}
 
 function getFileSize(url, next) {
   var length = 0,
@@ -22,11 +63,11 @@ function getFileSize(url, next) {
     .on('response', function onResponse(res) {
       status = res.statusCode;
       if ('content-length' in res.headers) {
-        console.warn('got content-length header from %s', url);
+        LOG('got content-length header from %s', url);
         length = res.headers['content-length'];
         stream.end();
       } else {
-        console.warn('reading %s ...', url);
+        LOG('reading %s ...', url);
         res.on('data', function onData(chunk) {
           length += chunk.length;
         });
@@ -43,11 +84,40 @@ function getFileSize(url, next) {
 }
 
 function done(error, urls) {
-  if (error) return console.error('error:', error);
+  if (error) return ERROR('error:', error);
+
+  // sort the URLs by length
   urls.sort(function(a, b) {
-    return a.length - b.length;
-  })
-  .forEach(function(d) {
-    console.log([d.size, d.url].join('\t'));
+    return sort(a.length, b.length);
   });
+
+  if (options.tsv) {
+    var out = options.out
+          ? fs.createWriteStream(out)
+          : process.stdout,
+        tsv = csv.createWriteStream({
+          delimiter: '\t',
+          headers: ['url', 'size', 'length']
+        });
+    tsv.pipe(out);
+    urls.forEach(function(d) {
+      tsv.write(d);
+    });
+  } else {
+    urls.forEach(function(d) {
+      console.log([d.size, d.url].join('\t') + '\t');
+    });
+  }
+}
+
+function notEmpty(str) {
+  return str && str.length;
+}
+
+function LOG() {
+  options.v && console.log.apply(console, arguments);
+}
+
+function ERROR() {
+  console.error.apply(console, arguments);
 }
