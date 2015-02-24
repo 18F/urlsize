@@ -6,7 +6,7 @@ var filesize = require('filesize'),
     rw = require('rw'),
     csv = require('fast-csv'),
     yargs = require('yargs')
-      .usage('$0 [options] <url> [<url>..]')
+      .usage('$0 [options] [<url>...]')
       .describe('file', 'read URLs from a text file (one per line)')
         .alias('file', 'f')
       .describe('d', 'sort URLs by size descending (default: ascending)')
@@ -15,6 +15,7 @@ var filesize = require('filesize'),
         .boolean('tsv')
         .alias('tsv', 't')
       .describe('help', 'show this helpful message')
+      .describe('v', 'print more helpful messages to stderr')
       .alias('help', 'h'),
     options = yargs.argv,
     fopts = {
@@ -36,9 +37,10 @@ if (help) {
 }
 
 if (options.file) {
-  var src = options.file === '-'
+  var src = (options.file === '-' || options.file === true)
     ? '/dev/stdin'
     : options.file;
+  LOG('reading URLs from %s ...', src);
   rw.readFile(src, {}, function(error, buffer) {
     if (error) return ERROR('unable to read from %s: %s', src, error);
     urls = buffer.toString()
@@ -56,6 +58,10 @@ function main(urls) {
 }
 
 function getFileSize(url, next) {
+  if (!url.match(/^https?:\/\//)) {
+    url = 'http://' + url;
+  }
+  LOG('getting %s ...', url);
   var length = 0,
       status,
       stream;
