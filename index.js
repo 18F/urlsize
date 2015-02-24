@@ -11,6 +11,9 @@ var filesize = require('filesize'),
         .alias('file', 'f')
       .describe('d', 'sort URLs by size descending (default: ascending)')
         .boolean('d')
+      .describe('csv', 'output comma-separated values')
+        .boolean('csv')
+        .alias('csv', 'c')
       .describe('tsv', 'output tab-separated values')
         .boolean('tsv')
         .alias('tsv', 't')
@@ -98,17 +101,18 @@ function done(error, urls) {
     return sort(a.length, b.length);
   });
 
-  if (options.tsv) {
+  if (options.csv || options.tsv) {
+    var opts = {
+      delimiter: options.tsv ? '\t' : ',',
+      headers: ['url', 'size', 'length']
+    };
     var out = options.out
           ? fs.createWriteStream(out)
           : process.stdout,
-        tsv = csv.createWriteStream({
-          delimiter: '\t',
-          headers: ['url', 'size', 'length']
-        });
-    tsv.pipe(out);
+        dsv = csv.createWriteStream(opts);
+    dsv.pipe(out);
     urls.forEach(function(d) {
-      tsv.write(d);
+      dsv.write(d);
     });
   } else {
     urls.forEach(function(d) {
