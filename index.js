@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 var filesize = require('filesize'),
     request = require('request'),
     async = require('async'),
