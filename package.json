@@ -1,0 +1,21 @@
+{
+  "name": "urlsize",
+  "version": "1.0.0",
+  "description": "get the human-readable size of a URL",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "keywords": [
+    "url",
+    "size"
+  ],
+  "author": "Shawn Allen",
+  "license": "CC0",
+  "dependencies": {
+    "async": "^0.9.0",
+    "filesize": "^3.1.1",
+    "request": "^2.53.0",
+    "yargs": "^3.3.1"
+  }
+}
