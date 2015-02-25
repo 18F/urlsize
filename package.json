@@ -28,5 +28,16 @@
   },
   "devDependencies": {
     "mocha": "^2.1.0"
-  }
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/18F/urlsize.git"
+  },
+  "bugs": {
+    "url": "https://github.com/18F/urlsize/issues"
+  },
+  "homepage": "https://github.com/18F/urlsize"
 }
