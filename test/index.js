@@ -3,9 +3,7 @@ var cmd = './index.js',
     path = require('path'),
     assert = require('assert'),
     child = require('child_process'),
-    csv = require('fast-csv'),
-    stream = require('stream'),
-    EventEmitter = require('events').EventEmitter;
+    csv = require('fast-csv');
 
 describe('cli', function() {
   // we need to give these commands lots of time to run
