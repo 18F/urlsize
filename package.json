@@ -13,7 +13,10 @@
     "url",
     "size"
   ],
-  "author": "Shawn Allen",
+  "author": {
+    "name": "Shawn Allen",
+    "url": "https://github.com/shawnbot"
+  },
   "license": "CC0",
   "dependencies": {
     "async": "^0.9.0",
