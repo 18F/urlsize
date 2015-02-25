@@ -17,9 +17,12 @@ var filesize = require('filesize'),
       .describe('tsv', 'output tab-separated values')
         .boolean('tsv')
         .alias('tsv', 't')
+      .describe('stream', 'stream in urls one line at a time (incompatible with the --file, -d options)')
+        .alias('stream', 's')
       .describe('help', 'show this helpful message')
       .describe('v', 'print more helpful messages to stderr')
-      .alias('help', 'h'),
+      .alias('help', 'h')
+      .wrap(72),
     options = yargs.argv,
     fopts = {
       unix: true
@@ -30,7 +33,7 @@ var filesize = require('filesize'),
       : function(a, b) { return a - b; },
     help = options.help;
 
-if (!options.file && !urls.length) {
+if (!options.stream && !options.file && !urls.length) {
   help = true;
 }
 
@@ -39,7 +42,30 @@ if (help) {
   return process.exit(1);
 }
 
-if (options.file) {
+if (options.stream) {
+
+  var src = (options.stream === true)
+        ? '/dev/stdin'
+        : options.stream,
+      es = require('event-stream'),
+      out = process.stdin
+        // split on newlines
+        .pipe(es.split())
+        // filter out empty lines
+        .pipe(es.map(function(line, next) {
+          line.length ? next(null, line) : next();
+        }))
+        .pipe(es.map(getFileSize));
+
+  if (options.csv) {
+    var stream = createCSVStream()
+      .pipe(process.stdout);
+    out.on('data', stream.write);
+  } else {
+    out.on('data', printURL);
+  }
+
+} else if (options.file) {
   var src = (options.file === '-' || options.file === true)
     ? '/dev/stdin'
     : options.file;
@@ -102,23 +128,26 @@ function done(error, urls) {
   });
 
   if (options.csv || options.tsv) {
-    var opts = {
-      delimiter: options.tsv ? '\t' : ',',
-      headers: ['url', 'size', 'length']
-    };
-    var out = options.out
-          ? fs.createWriteStream(out)
-          : process.stdout,
-        dsv = csv.createWriteStream(opts);
-    dsv.pipe(out);
+    var dsv = createCSVStream();
+    dsv.pipe(process.stdout);
     urls.forEach(function(d) {
       dsv.write(d);
     });
   } else {
-    urls.forEach(function(d) {
-      console.log([d.size, d.url].join('\t') + '\t');
-    });
+    urls.forEach(printURL);
   }
+}
+
+function createCSVStream() {
+  var opts = {
+    delimiter: options.tsv ? '\t' : ',',
+    headers: ['url', 'size', 'length']
+  };
+  return csv.createWriteStream(opts);
+}
+
+function printURL(d) {
+  console.log([d.size, d.url].join('\t') + '\t');
 }
 
 function notEmpty(str) {
