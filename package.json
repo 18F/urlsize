@@ -4,7 +4,7 @@
   "description": "get the human-readable size of a URL",
   "main": "index.js",
   "bin": {
-    "urlsize": "index.js"
+    "urlsize": "cli.js"
   },
   "scripts": {
     "test": "mocha"
