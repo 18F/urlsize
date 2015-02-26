@@ -24,6 +24,7 @@ var urlsize = require('../'),
         .alias('out', 'o')
       .describe('help', 'show this helpful message')
       .describe('v', 'print more helpful messages to stderr')
+        .boolean('v')
       .alias('help', 'h'),
     options = yargs.argv,
     help = options.help,
@@ -46,7 +47,10 @@ if (help) {
 
 var sizeOptions = {
       unix: true,
-      sort: options.desc ? 'd' : 'a'
+      sort: options.desc ? 'd' : 'a',
+      log: options.v
+        ? console.warn.bind(console)
+        : false
     },
     fopts = {
       encoding: 'utf8'
@@ -61,6 +65,8 @@ if (options.stream) {
 
 } else if (options.file) {
 
+  // XXX ignore files in argc?
+  urls = [];
   createInputStream()
     .on('data', function(url) {
       if (url) urls.push(url);
