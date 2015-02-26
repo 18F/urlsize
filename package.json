@@ -1,13 +1,13 @@
 {
   "name": "urlsize",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "get the human-readable size of a URL",
   "main": "index.js",
   "bin": {
-    "urlsize": "index.js"
+    "urlsize": "bin/urlsize.js"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha -b"
   },
   "keywords": [
     "url",
@@ -24,6 +24,9 @@
     "filesize": "^3.1.1",
     "request": "^2.53.0",
     "rw": "^0.1.4",
+    "split2": "^0.2.1",
+    "stream-array": "^1.0.1",
+    "through2": "^0.6.3",
     "yargs": "^3.3.1"
   },
   "devDependencies": {
