@@ -1,9 +1,95 @@
-var cmd = './index.js',
+'use strict';
+var urlsize = require('../'),
+    cmd = './bin/urlsize.js',
     fs = require('fs'),
     path = require('path'),
     assert = require('assert'),
     child = require('child_process'),
+    through2 = require('through2'),
     csv = require('fast-csv');
+
+describe('api', function() {
+
+  describe('urlsize.createReadStream()', function() {
+    it('streams urls', function(done) {
+      var str = urlsize.createReadStream()
+        .on('data', function(d) {
+          assert.ok(d, 'no url: ' + d);
+          done();
+        })
+        .end('google.com');
+    });
+  });
+
+  describe('urlsize()', function() {
+
+    it('works without options', function(done) {
+      urlsize('google.com', function(error, url) {
+        assert.ok(!error, 'error: ' + error);
+        assert.ok(typeof url === 'object', 'url is not an object: ' + (typeof url));
+        assert.equal(url.url, 'http://google.com', 'no http:// prefix: ' + url);
+        assert.ok(url.size.match(/kb$/i), 'bad size suffix: ' + url.size);
+        done();
+      });
+    });
+
+    it('works with options', function(done) {
+      urlsize('google.com', {unix: true}, function(error, url) {
+        assert.ok(!error, 'error: ' + error);
+        assert.ok(typeof url === 'object', 'url is not an object: ' + (typeof url));
+        assert.equal(url.url, 'http://google.com', 'no http:// prefix: ' + url);
+        assert.ok(url.size.match(/K$/), 'bad unix size format: ' + url.size);
+        done();
+      });
+    });
+
+  });
+
+  describe('urlsize.batch()', function() {
+
+    it('takes multiple urls', function(done) {
+      urlsize.batch(['google.com', 'yahoo.com'], function(error, urls) {
+        assert.ok(!error, 'error: ' + error);
+        assert.equal(urls.length, 2, 'bad urls.length: ' + urls.length);
+        done();
+      });
+    });
+
+    it('takes multiple urls with options', function(done) {
+      urlsize.batch(['google.com', 'yahoo.com'], {unix: true}, function(error, urls) {
+        assert.ok(!error, 'error: ' + error);
+        assert.equal(urls.length, 2, 'bad urls.length: ' + urls.length);
+        done();
+      });
+    });
+
+    it('sorts by length descending', function(done) {
+      var options = {sort: 'd'};
+      urlsize.batch(['google.com', 'yahoo.com'], options, function(error, urls) {
+        assert.ok(!error, 'error: ' + error);
+        assert.equal(urls.length, 2, 'bad urls.length: ' + urls.length);
+        var sizes = urls.map(function(d) { return d.length; }),
+            sorted = sizes.slice().sort(descending);
+        assert.deepEqual(sizes, sorted, 'wrong sort order: ' + sizes);
+        done();
+      });
+    });
+
+    it('sorts by length ascending', function(done) {
+      var options = {sort: true};
+      urlsize.batch(['google.com', 'yahoo.com'], options, function(error, urls) {
+        assert.ok(!error, 'error: ' + error);
+        assert.equal(urls.length, 2, 'bad urls.length: ' + urls.length);
+        var sizes = urls.map(function(d) { return d.length; }),
+            sorted = sizes.slice().sort(ascending);
+        assert.deepEqual(sizes, sorted, 'wrong sort order: ' + sizes);
+        done();
+      });
+    });
+
+  });
+
+});
 
 describe('cli', function() {
   // we need to give these commands lots of time to run
@@ -15,11 +101,6 @@ describe('cli', function() {
   it('complains when it gets too few args', function(done) {
     var proc = run([]);
     assertExitCode(proc, 1, done);
-  });
-
-  it('exits 0 when it gets enough args', function(done) {
-    var proc = run(['-']);
-    assertExitCode(proc, 0, done);
   });
 
   it('takes a single URL', function(done) {
@@ -98,7 +179,6 @@ describe('cli', function() {
       parseCSV(stdout, ',', function(error, rows) {
         assert.ok(!error, 'csv parse error: ' + error);
         assert.equal(rows.length, 1, 'expected 1 row, got ' + rows.length);
-        assert.deepEqual(Object.keys(rows[0]), ['url', 'size', 'length']);
         assert.equal(rows[0].url, 'http://google.com', 'bad row 0: ' + JSON.stringify(rows[0]));
         done();
       });
@@ -111,7 +191,6 @@ describe('cli', function() {
       parseCSV(stdout, '\t', function(error, rows) {
         assert.ok(!error, 'tsv parse error: ' + error);
         assert.equal(rows.length, 1, 'expected 1 row, got ' + rows.length);
-        assert.deepEqual(Object.keys(rows[0]), ['url', 'size', 'length']);
         assert.equal(rows[0].url, 'http://google.com', 'bad row 0: ' + JSON.stringify(rows[0]));
         done();
       });
