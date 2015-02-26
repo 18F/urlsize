@@ -3,8 +3,7 @@ var filesize = require('filesize'),
     request = require('request'),
     async = require('async'),
     stream = require('stream'),
-    through2 = require('through2'),
-    es = require('event-stream');
+    through2 = require('through2');
 
 var urlsize = function urlsize(url, options, done) {
   // do a batch operation we got an array
