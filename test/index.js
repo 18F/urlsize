@@ -1,3 +1,4 @@
+'use strict';
 var urlsize = require('../'),
     cmd = './bin/urlsize.js',
     fs = require('fs'),
